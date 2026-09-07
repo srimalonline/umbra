@@ -112,7 +112,7 @@ fi
 if [ "$INSTALLED" = "0" ] && [ -f "./go.mod" ] && grep -q 'module github.com/srimalonline/umbra' go.mod 2>/dev/null; then
   if ! command -v go >/dev/null 2>&1; then
     say "! No prebuilt binary was available and Go is not installed to build from source."
-    say "  Install Go 1.22+ (https://go.dev/dl/) and re-run, or download a release binary."
+    say "  Install Go 1.25+ (https://go.dev/dl/) and re-run, or download a release binary."
     exit 1
   fi
   say "Building umbra from this checkout with 'go build'…"

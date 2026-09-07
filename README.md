@@ -26,7 +26,7 @@ The installer ensures Docker, installs the `umbra` binary to `/usr/local/bin`, a
 
 > **Read any script before you pipe it to a shell** — this one included.
 >
-> **While this repo is private**, that raw URL will not resolve and there are no published release binaries yet. Install from a clone instead (needs Go 1.22+ to build):
+> **While this repo is private**, that raw URL will not resolve and there are no published release binaries yet. Install from a clone instead (needs Go 1.25+ to build):
 > ```sh
 > git clone git@github.com:srimalonline/umbra.git && cd umbra && ./install.sh
 > ```
@@ -86,7 +86,7 @@ v0 is an honest working skeleton: it really deploys and runs apps with SSL, head
 
 ## Build from source
 
-Umbra is a standard Go module (`github.com/srimalonline/umbra`, Go 1.22+). One command produces the binary:
+Umbra is a standard Go module (`github.com/srimalonline/umbra`, Go 1.25+). One command produces the binary:
 
 ```sh
 go build -o umbra .
