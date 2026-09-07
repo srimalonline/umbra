@@ -22,13 +22,13 @@ The name: the *umbra* is the innermost part of a shadow, where the light is full
 curl -fsSL https://raw.githubusercontent.com/srimalonline/umbra/main/install.sh | sh
 ```
 
-The installer ensures Docker, installs the `umbra` binary to `/usr/local/bin`, and brings up the proxy. It downloads a prebuilt binary when a release exists and otherwise builds from a local checkout with `go build`. Pass options after `-s --`, e.g. `| sh -s -- --yes`.
+The installer ensures Docker, downloads the prebuilt `umbra` binary for your OS/arch into `/usr/local/bin`, and brings up the proxy. No Node, no toolchain — one static binary. Pass options after `-s --`, e.g. `| sh -s -- --yes`.
 
 > **Read any script before you pipe it to a shell** — this one included.
 >
-> **While this repo is private**, that raw URL will not resolve and there are no published release binaries yet. Install from a clone instead (needs Go 1.25+ to build):
+> Prefer to build from source? Clone and run (needs Go 1.25+):
 > ```sh
-> git clone git@github.com:srimalonline/umbra.git && cd umbra && ./install.sh
+> git clone https://github.com/srimalonline/umbra.git && cd umbra && ./install.sh
 > ```
 
 ## Use it — two doors, one platform
