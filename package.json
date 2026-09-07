@@ -1,0 +1,44 @@
+{
+  "name": "umbra",
+  "version": "0.1.0",
+  "description": "Headless PaaS whose only control surfaces are an MCP layer and a CLI. Coolify without the dashboard — the agent is the dashboard.",
+  "type": "module",
+  "bin": {
+    "umbra": "dist/cli.js"
+  },
+  "main": "dist/core/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist",
+    "install.sh",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "dev": "tsc --watch",
+    "mcp": "node dist/mcp/index.js"
+  },
+  "keywords": [
+    "paas",
+    "mcp",
+    "headless",
+    "docker",
+    "caddy",
+    "deploy"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "execa": "^9.5.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

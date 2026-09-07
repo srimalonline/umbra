@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+# ~/.umbra lives outside the repo — never commit app state or the Caddyfile.
+# No secrets, tokens, or ACME account keys ever belong in this repo.
+.env
+*.tsbuildinfo
