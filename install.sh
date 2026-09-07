@@ -1,5 +1,5 @@
 #!/bin/sh
-# umbra installer — headless platform, no ui, ever.
+# umbra installer — AI-native PaaS, your agent is the dashboard.
 # Idempotent. Safe to re-run. Read this script before piping it to a shell.
 #
 #   curl -fsSL https://raw.githubusercontent.com/srimalonline/umbra/main/install.sh | sh
@@ -32,7 +32,7 @@ banner() {
 | | | | '_ ` _ \| '_ \| '__/ _` |
 | |_| | | | | | | |_) | | | (_| |
  \__,_|_| |_| |_|_.__/|_|  \__,_|
-        headless platform · no ui, ever
+        AI-native PaaS · your agent is the dashboard
 EOF
 }
 

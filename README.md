@@ -3,7 +3,7 @@
 | | | | '_ ` _ \| '_ \| '__/ _` |
 | |_| | | | | | | |_) | | | (_| |
  \__,_|_| |_| |_|_.__/|_|  \__,_|
-        headless platform · no ui, ever
+        AI-native PaaS · your agent is the dashboard
 ```
 
 # umbra

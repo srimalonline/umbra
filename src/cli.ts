@@ -13,7 +13,7 @@ const VERSION = "0.1.0";
 const deps = realDeps();
 
 function usage(): string {
-  return `umbra — headless platform (no ui, ever)
+  return `umbra — AI-native PaaS (your agent is the dashboard)
 
 Usage:
   umbra init                                 ensure the proxy + network, print status

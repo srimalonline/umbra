@@ -2,7 +2,7 @@
  * The umbra wordmark. Shown by `umbra init`, `umbra --version`, and the
  * installer. Kept tasteful and small — this is a server tool, not a toy.
  */
-export const TAGLINE = "headless platform · no ui, ever";
+export const TAGLINE = "AI-native PaaS · your agent is the dashboard";
 
 export const BANNER = String.raw`
  _   _ _ __ ___ | |__  _ __ __ _
