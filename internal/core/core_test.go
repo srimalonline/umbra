@@ -245,3 +245,85 @@ func TestRemovePurgePassesV(t *testing.T) {
 		t.Fatalf("purge must pass -v (the only path to volume loss): %v", down)
 	}
 }
+
+// --- local (behind a tunnel) proxy mode --------------------------------------
+
+func TestRenderCaddyfileLocalMode(t *testing.T) {
+	cf := RenderCaddyfile(ProxyConfig{
+		Email:  "me@example.com",
+		Mode:   ProxyModeLocal,
+		Routes: []Route{{Domain: "erp.example.com", App: "erp", Port: 8080}},
+	})
+	if !strings.Contains(cf, "auto_https off") {
+		t.Fatalf("local mode must switch off automatic HTTPS:\n%s", cf)
+	}
+	if !strings.Contains(cf, "http://erp.example.com {") {
+		t.Fatalf("local mode must serve the site over plain http:\n%s", cf)
+	}
+	if strings.Contains(cf, "email me@example.com") {
+		t.Fatalf("local mode has no ACME, so no email directive:\n%s", cf)
+	}
+}
+
+func TestEnsureProxyLocalBindsLoopbackOnly(t *testing.T) {
+	deps, calls, _ := makeDeps()
+	if err := SetProxyMode(deps, ProxyModeLocal); err != nil {
+		t.Fatal(err)
+	}
+	if err := EnsureProxy(deps); err != nil {
+		t.Fatal(err)
+	}
+	c := callWith(*calls, "run")
+	if c == nil {
+		t.Fatalf("expected a docker run for the proxy")
+	}
+	if !contains(c.args, "127.0.0.1:80:80") {
+		t.Fatalf("local proxy must bind loopback only, got %v", c.args)
+	}
+	for _, a := range c.args {
+		if a == "80:80" || a == "443:443" {
+			t.Fatalf("local proxy must publish nothing publicly, got %v", c.args)
+		}
+	}
+}
+
+func TestEnsureProxyPublicByDefault(t *testing.T) {
+	deps, calls, _ := makeDeps()
+	if err := EnsureProxy(deps); err != nil {
+		t.Fatal(err)
+	}
+	c := callWith(*calls, "run")
+	if c == nil || !contains(c.args, "80:80") || !contains(c.args, "443:443") {
+		t.Fatalf("default proxy must stay public on 80 + 443, got %v", c)
+	}
+}
+
+func TestSetProxyModeRejectsUnknown(t *testing.T) {
+	deps, _, _ := makeDeps()
+	if err := SetProxyMode(deps, "sideways"); err == nil {
+		t.Fatalf("expected an error for an unknown mode")
+	}
+}
+
+func TestSetProxyModeSameModeIsNoop(t *testing.T) {
+	deps, calls, _ := makeDeps()
+	if err := SetProxyMode(deps, ProxyModePublic); err != nil {
+		t.Fatal(err)
+	}
+	if len(*calls) != 0 {
+		t.Fatalf("setting the current mode must not touch docker, got %v", *calls)
+	}
+}
+
+func TestSetProxyModePersists(t *testing.T) {
+	deps, _, fs := makeDeps()
+	if err := SetProxyMode(deps, ProxyModeLocal); err != nil {
+		t.Fatal(err)
+	}
+	if !loadProxyConfig(deps).IsLocal() {
+		t.Fatalf("mode not persisted: %v", fs.store[proxyConfigPath(deps.Home)])
+	}
+	if !strings.Contains(fs.store[caddyfilePath(deps.Home)], "auto_https off") {
+		t.Fatalf("Caddyfile not re-rendered for local mode")
+	}
+}

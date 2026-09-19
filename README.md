@@ -62,6 +62,7 @@ Tools: `umbra_deploy`, `umbra_apps`, `umbra_status`, `umbra_logs`, `umbra_contro
 - An **app** is a docker-compose project under `~/.umbra/apps/<name>/`.
 - One **Caddy** container is the reverse proxy; apps share an `umbra` bridge network and Caddy routes `domain → app:port`. Caddy issues and renews Let's Encrypt certificates automatically.
 - **For SSL to work**: the domain's DNS must point at this server, and TCP **80 + 443** must be open to the internet. Umbra can't verify that from inside the box — it's a fact about your host and DNS.
+- **Behind a tunnel instead** (Cloudflare Tunnel or similar): `umbra init --local-only`. Caddy binds to `127.0.0.1:80` only and serves plain HTTP; the tunnel's edge holds the certificate, and the server has **no public ports at all**. This matters because Docker-published ports bypass host firewalls such as UFW, so a public `80:80` stays reachable even when the firewall says deny. `umbra init --public` switches back (the proxy container is recreated; certificates and volumes are kept).
 
 ## What's in v0 — and what isn't
 

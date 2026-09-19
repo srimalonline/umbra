@@ -69,12 +69,26 @@ type Route struct {
 	Port   int    `json:"port"`
 }
 
+// Proxy modes. Public is the default: Caddy publishes 80 + 443 to the
+// internet and issues Let's Encrypt certificates itself. Local is for a host
+// that sits behind a tunnel (e.g. Cloudflare Tunnel): Caddy binds to
+// 127.0.0.1:80 only, serves plain HTTP, and TLS is terminated at the edge.
+const (
+	ProxyModePublic = "public"
+	ProxyModeLocal  = "local"
+)
+
 // ProxyConfig is the persisted proxy configuration under ~/.umbra/proxy/routes.json.
 type ProxyConfig struct {
 	// Email is the ACME contact for Let's Encrypt; optional but recommended.
-	Email  string  `json:"email,omitempty"`
+	Email string `json:"email,omitempty"`
+	// Mode is ProxyModePublic (default when empty) or ProxyModeLocal.
+	Mode   string  `json:"mode,omitempty"`
 	Routes []Route `json:"routes"`
 }
+
+// IsLocal reports whether the proxy runs behind a tunnel on loopback only.
+func (c ProxyConfig) IsLocal() bool { return c.Mode == ProxyModeLocal }
 
 // DeployArgs are the inputs to Deploy.
 type DeployArgs struct {

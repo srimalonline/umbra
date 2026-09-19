@@ -22,7 +22,8 @@ func usage() string {
 	return `umbra — AI-native PaaS (your agent is the dashboard)
 
 Usage:
-  umbra init                                 ensure the proxy + network, print status
+  umbra init [--local-only | --public]       ensure the proxy + network, print status
+                                             --local-only: behind a tunnel, bind 127.0.0.1:80, no public ports
   umbra deploy <name> --image <img> [--domain d] [--port n]
   umbra deploy <name> --compose <file> [--domain d] [--port n] [--service s]
   umbra ls                                   list apps
@@ -117,6 +118,18 @@ func dispatch(out io.Writer, cmd string, pos []string, f flags) error {
 		printData(out, banner.Banner(Version))
 		return nil
 	case "init":
+		if f.has("local-only") && f.has("public") {
+			return fmt.Errorf("init takes --local-only or --public, not both")
+		}
+		if f.has("local-only") {
+			if err := core.SetProxyMode(deps, core.ProxyModeLocal); err != nil {
+				return err
+			}
+		} else if f.has("public") {
+			if err := core.SetProxyMode(deps, core.ProxyModePublic); err != nil {
+				return err
+			}
+		}
 		if err := core.EnsureProxy(deps); err != nil {
 			return err
 		}

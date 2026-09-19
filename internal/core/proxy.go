@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -20,16 +21,31 @@ import (
 // route is simply `domain -> reverse_proxy <app>:<port>` — no host ports, no
 // per-app port juggling.
 //
-// DNS + ports: for SSL to issue, the domain's A/AAAA record must point at this
-// server and TCP 80 + 443 must be open to the internet. That is a fact about
-// the host, documented in the README; umbra cannot verify it from here.
+// DNS + ports (public mode): for SSL to issue, the domain's A/AAAA record must
+// point at this server and TCP 80 + 443 must be open to the internet. That is a
+// fact about the host, documented in the README; umbra cannot verify it from here.
+//
+// Local mode: Caddy publishes nothing to the internet. It binds 127.0.0.1:80
+// and serves plain HTTP; a tunnel (cloudflared on the host, or a container on
+// the umbra network pointing at umbra-proxy:80) carries traffic in, and TLS
+// ends at the tunnel's edge. Docker-published ports bypass host firewalls such
+// as UFW, so loopback binding is the only way "no open ports" actually holds.
 
 // RenderCaddyfile renders a full Caddyfile from the route table. Pure — unit-tested directly.
 func RenderCaddyfile(config ProxyConfig) string {
 	var out []string
 	out = append(out, "# Managed by umbra. Do not edit by hand — regenerated on every route change.")
-	if config.Email != "" {
-		out = append(out, "", "{", "\temail "+config.Email, "}")
+	var global []string
+	if config.Email != "" && !config.IsLocal() {
+		global = append(global, "\temail "+config.Email)
+	}
+	if config.IsLocal() {
+		global = append(global, "\tauto_https off")
+	}
+	if len(global) > 0 {
+		out = append(out, "", "{")
+		out = append(out, global...)
+		out = append(out, "}")
 	}
 	if len(config.Routes) == 0 {
 		out = append(out, "", "# No routes yet. Attach a domain: umbra domain <app> <domain> --port <n>")
@@ -38,7 +54,12 @@ func RenderCaddyfile(config ProxyConfig) string {
 	copy(routes, config.Routes)
 	sort.SliceStable(routes, func(i, j int) bool { return routes[i].Domain < routes[j].Domain })
 	for _, r := range routes {
-		out = append(out, "", r.Domain+" {", "\treverse_proxy "+r.App+":"+itoa(r.Port), "}")
+		site := r.Domain
+		if config.IsLocal() {
+			// Plain HTTP on :80; the tunnel's edge holds the certificate.
+			site = "http://" + r.Domain
+		}
+		out = append(out, "", site+" {", "\treverse_proxy "+r.App+":"+itoa(r.Port), "}")
 	}
 	return strings.Join(out, "\n") + "\n"
 }
@@ -137,19 +158,62 @@ func EnsureProxy(deps Deps) error {
 		_, _, _, err := run(deps, defaultTimeout, "docker", "start", ProxyContainer)
 		return err
 	}
-	_, _, _, err = run(deps, defaultTimeout, "docker",
+	args := []string{
 		"run", "-d",
 		"--name", ProxyContainer,
 		"--restart", "unless-stopped",
 		"--network", UmbraNetwork,
-		"-p", "80:80",
-		"-p", "443:443",
+	}
+	args = append(args, proxyPortArgs(config)...)
+	args = append(args,
 		"-v", caddyfilePath(deps.Home)+":/etc/caddy/Caddyfile",
 		"-v", CaddyDataVolume+":/data",
 		"-v", CaddyConfigVolume+":/config",
 		ProxyImage,
 	)
+	_, _, _, err = run(deps, defaultTimeout, "docker", args...)
 	return err
+}
+
+// proxyPortArgs returns the docker -p flags for the proxy's mode. Pure.
+func proxyPortArgs(config ProxyConfig) []string {
+	if config.IsLocal() {
+		return []string{"-p", "127.0.0.1:80:80"}
+	}
+	return []string{"-p", "80:80", "-p", "443:443"}
+}
+
+// SetProxyMode switches the proxy between public and local (behind a tunnel).
+// Port bindings are fixed when a container is created, so a real change of
+// mode removes the proxy container (its volumes and certificates are kept);
+// EnsureProxy then recreates it with the new bindings. Setting the current
+// mode again is a no-op.
+func SetProxyMode(deps Deps, mode string) error {
+	if mode != ProxyModePublic && mode != ProxyModeLocal {
+		return fmt.Errorf("unknown proxy mode %q (want %q or %q)", mode, ProxyModePublic, ProxyModeLocal)
+	}
+	config := loadProxyConfig(deps)
+	current := config.Mode
+	if current == "" {
+		current = ProxyModePublic
+	}
+	if current == mode {
+		return nil
+	}
+	config.Mode = mode
+	if err := saveProxyConfig(deps, config); err != nil {
+		return err
+	}
+	exists, err := containerExists(deps, ProxyContainer)
+	if err != nil {
+		return err
+	}
+	if exists {
+		if _, _, _, err := run(deps, defaultTimeout, "docker", "rm", "-f", ProxyContainer); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // reloadProxy asks the running Caddy to reload its config in place — no downtime.
